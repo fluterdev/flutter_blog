@@ -5,24 +5,35 @@ import 'package:blog_app/services.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
-class UploadBlogPage extends StatefulWidget {
-  const UploadBlogPage({Key? key}) : super(key: key);
+class PostEditPage extends StatefulWidget {
+  const PostEditPage({Key? key, required this.postModel}) : super(key: key);
 
-  //for routing
-  static const String routeName = "/uploadBlogPage";
+  final PostModel postModel;
 
   @override
-  State<UploadBlogPage> createState() => _UploadBlogPageState();
+  State<PostEditPage> createState() => _PostEditPageState();
 }
 
-class _UploadBlogPageState extends State<UploadBlogPage> {
-  bool isUploading = false;
-  bool? _isChecked;
+class _PostEditPageState extends State<PostEditPage> {
+  final GlobalKey<FormState> _editFormKey = GlobalKey<FormState>();
+
+  bool isEditing = false;
+
+  late bool _isChecked;
+  late String title;
+  late String description;
+  late String image;
+
   PlatformFile? _platformFile;
-  // List<PostModel> postModelList = [];
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final TextEditingController _titleTextEditingController = TextEditingController();
-  final TextEditingController _descriptionTextEditingController = TextEditingController();
+
+  @override
+  void initState() {
+    title = widget.postModel.title;
+    _isChecked = widget.postModel.isFeatured;
+    description = widget.postModel.description ?? "";
+    image = widget.postModel.image;
+    super.initState();
+  }
 
   Future<PlatformFile?> pickImage() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.image);
@@ -32,70 +43,43 @@ class _UploadBlogPageState extends State<UploadBlogPage> {
     return null;
   }
 
-  Future<void> _handleUpload(BuildContext context) async {
-    if (_formKey.currentState!.validate() && _platformFile != null) {
+  Future<void> _handleEdit(BuildContext context) async {
+    if (_editFormKey.currentState!.validate()) {
       setState(() {
-        isUploading = true;
+        isEditing = true;
       });
-      //getting data from form
-      final title = _titleTextEditingController.text;
-      final description = _descriptionTextEditingController.text;
-      // print(title);
-      // print(description);
-      // print(_isChecked);
-      // print(_platformFile?.path);
 
-      //getting image download url from firebase storage
+      String? downloadUrl;
+      if (_platformFile != null) {
+        downloadUrl = await FirebaseServices()
+            .uploadFileToStorageAndReturnUrl(blogTitle: title.replaceAll(" ", ""), platformFile: _platformFile!);
+      }
+
       FirebaseServices firebaseServices = FirebaseServices();
-
-      final String? downloadUrl =
-          await firebaseServices.uploadFileToStorageAndReturnUrl(blogTitle: title, platformFile: _platformFile!);
 
       final postModel = PostModel(
         title: title,
         description: description,
-        isFeatured: _isChecked ?? false,
-        image: downloadUrl ?? "",
+        isFeatured: _isChecked,
+        image: downloadUrl ?? image,
         createdAt: DateTime.now(),
       );
-
       //adding post model to firebase
-      await firebaseServices.storePostModelToFirebase(postModel: postModel);
-
+      await firebaseServices.updatePostModel(postId: widget.postModel.id!, postModel: postModel);
       Navigator.pop(context, postModel);
       setState(() {
-        isUploading = false;
+        isEditing = false;
       });
     }
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-    _titleTextEditingController.dispose();
-    _descriptionTextEditingController.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Upload Blog'),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 20),
-            child: IconButton(
-              onPressed: isUploading
-                  ? null
-                  : () {
-                      _handleUpload(context);
-                    },
-              icon: const Icon(Icons.upload),
-            ),
-          )
-        ],
+        title: const Text('Edit Blog'),
       ),
-      body: isUploading
+      body: isEditing
           ? const Center(
               child: CircularProgressIndicator(),
             )
@@ -106,9 +90,9 @@ class _UploadBlogPageState extends State<UploadBlogPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildAddProfileBtn(context),
+                      _buildEditProfileBtn(context),
                       const SizedBox(height: 20),
-                      _buildFormFields(context),
+                      _buildEditFormFields(context),
                       const SizedBox(height: 100),
                     ],
                   ),
@@ -121,26 +105,31 @@ class _UploadBlogPageState extends State<UploadBlogPage> {
           height: 40,
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: isUploading
+            onPressed: isEditing
                 ? null
                 : () {
-                    _handleUpload(context);
+                    _handleEdit(context);
                   },
-            child: const Text('Upload Post'),
+            child: const Text('Edit Post'),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildFormFields(BuildContext context) {
+  Widget _buildEditFormFields(BuildContext context) {
     return Form(
-      key: _formKey,
+      key: _editFormKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           TextFormField(
-            controller: _titleTextEditingController,
+            initialValue: title,
+            onChanged: (value) {
+              setState(() {
+                title = value;
+              });
+            },
             validator: (value) {
               if (value != null) {
                 return value.isEmpty ? 'title can not be empty' : null;
@@ -153,7 +142,12 @@ class _UploadBlogPageState extends State<UploadBlogPage> {
           ),
           const SizedBox(height: 20),
           TextFormField(
-            controller: _descriptionTextEditingController,
+            initialValue: description,
+            onChanged: (value) {
+              setState(() {
+                description = value;
+              });
+            },
             validator: (value) {
               if (value != null) {
                 return value.isEmpty ? 'description can not be empty' : null;
@@ -168,10 +162,10 @@ class _UploadBlogPageState extends State<UploadBlogPage> {
           const SizedBox(height: 20),
           CheckboxListTile(
             title: const Text('Featured Post'),
-            value: _isChecked ?? false,
+            value: _isChecked,
             onChanged: (value) {
               setState(() {
-                _isChecked = value;
+                _isChecked = value ?? false;
               });
             },
           ),
@@ -180,7 +174,7 @@ class _UploadBlogPageState extends State<UploadBlogPage> {
     );
   }
 
-  Widget _buildAddProfileBtn(BuildContext context) {
+  Widget _buildEditProfileBtn(BuildContext context) {
     return GestureDetector(
       onTap: () async {
         final PlatformFile? file = await pickImage();
@@ -202,7 +196,7 @@ class _UploadBlogPageState extends State<UploadBlogPage> {
                   ),
                   fit: BoxFit.cover,
                 )
-              : null,
+              : DecorationImage(image: NetworkImage(widget.postModel.image), fit: BoxFit.cover),
         ),
         child: const Center(
           child: CircleAvatar(

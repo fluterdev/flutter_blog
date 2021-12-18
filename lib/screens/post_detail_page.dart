@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:blog_app/model/post_model.dart';
 import 'package:flutter/material.dart';
 
@@ -32,8 +30,8 @@ class PostDetailPage extends StatelessWidget {
                   tag: postModel.title.replaceAll(" ", ""),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: Image.file(
-                      File(postModel.image.path!),
+                    child: Image.network(
+                      postModel.image,
                       height: 300,
                       width: double.infinity,
                       fit: BoxFit.cover,
