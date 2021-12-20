@@ -3,12 +3,41 @@ import 'dart:io';
 import 'package:blog_app/model/post_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/widgets.dart';
 
 class FirebaseServices {
   final FirebaseStorage _firebaseStorage = FirebaseStorage.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  //firebase auth instance
+  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+
+  //AUTH SERVICES
+  Future<bool> loginWithEmail({required String email, required String password}) async {
+    try {
+      await _firebaseAuth.signInWithEmailAndPassword(email: email, password: password);
+      return true;
+    } catch (err) {
+      debugPrint("Error login:$err");
+      return false;
+    }
+  }
+
+  //signup
+  Future<bool> registerWithEmail({required String email, required String password, required String username}) async {
+    try {
+      final UserCredential userCredential = await _firebaseAuth.createUserWithEmailAndPassword(email: email, password: password);
+      await _firestore.collection('users').doc(userCredential.user?.uid).set({
+        'username': username,
+        'email': userCredential.user?.email,
+      });
+      return true;
+    } catch (err) {
+      debugPrint("Error signup:$err");
+      return false;
+    }
+  }
 
   //for storing post model to firebase
   Future<void> storePostModelToFirebase({required PostModel postModel}) async {

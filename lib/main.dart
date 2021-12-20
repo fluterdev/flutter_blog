@@ -1,8 +1,7 @@
+import 'package:blog_app/screens/auth_screens/login_screen.dart';
 import 'package:blog_app/screens/upload_blog_page.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-
-import 'screens/home_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,7 +23,7 @@ class MyApp extends StatelessWidget {
       ),
       initialRoute: '/',
       routes: {
-        '/': (context) => const HomePage(),
+        '/': (context) => const LoginScreen(),
         UploadBlogPage.routeName: (context) => const UploadBlogPage(),
       },
     );
