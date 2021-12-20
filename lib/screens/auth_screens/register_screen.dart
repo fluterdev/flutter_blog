@@ -1,3 +1,4 @@
+import 'package:blog_app/constants/constants.dart';
 import 'package:blog_app/services.dart';
 import 'package:flutter/material.dart';
 
@@ -128,6 +129,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               );
 
                               if (isSuccess) {
+                                //setting bool value to shared pref
+                                if (SharedPrefConstant.sharedPreferences != null) {
+                                  SharedPrefConstant.sharedPreferences?.setBool(isLoginKey, true);
+                                }
+
                                 //navigating to homepage if success
                                 Navigator.pushAndRemoveUntil(
                                     context,

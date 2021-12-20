@@ -1,3 +1,4 @@
+import 'package:blog_app/constants/constants.dart';
 import 'package:blog_app/screens/auth_screens/register_screen.dart';
 import 'package:blog_app/screens/home_page.dart';
 import 'package:flutter/material.dart';
@@ -112,6 +113,11 @@ class _LoginScreenState extends State<LoginScreen> {
                               );
 
                               if (isSuccess) {
+                                //setting shared pref bool value as true
+                                if (SharedPrefConstant.sharedPreferences != null) {
+                                  SharedPrefConstant.sharedPreferences?.setBool(isLoginKey, true);
+                                }
+
                                 //navigating to homepage if login success
                                 Navigator.pushAndRemoveUntil(
                                   context,

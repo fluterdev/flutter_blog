@@ -1,4 +1,6 @@
+import 'package:blog_app/constants/constants.dart';
 import 'package:blog_app/model/post_model.dart';
+import 'package:blog_app/screens/auth_screens/login_screen.dart';
 import 'package:blog_app/screens/post_detail_page.dart';
 import 'package:blog_app/screens/post_edit_page.dart';
 import 'package:blog_app/screens/upload_blog_page.dart';
@@ -12,12 +14,57 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
+AlertDialog _showAlertForLogout(BuildContext context) {
+  return AlertDialog(
+    title: const Text("Blog App"),
+    content: const Text(
+      "Are you sure to log out ?",
+    ),
+    actions: [
+      TextButton(
+        onPressed: () {
+          if (SharedPrefConstant.sharedPreferences != null) {
+            SharedPrefConstant.sharedPreferences?.setBool(isLoginKey, false);
+          }
+          Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const LoginScreen(),
+              ),
+              (Route<dynamic> route) => false);
+        },
+        child: const Text('Yes'),
+      ),
+      TextButton(
+        onPressed: () {
+          Navigator.pop(context);
+        },
+        child: const Text('No'),
+      ),
+    ],
+  );
+}
+
 class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Blog App'),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 20),
+            child: IconButton(
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (context) => _showAlertForLogout(context),
+                );
+              },
+              icon: const Icon(Icons.logout_outlined),
+            ),
+          )
+        ],
       ),
       body: SafeArea(
         child: FutureBuilder<List<PostModel>>(
@@ -124,14 +171,15 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                   IconButton(
-                      onPressed: () {
-                        FirebaseServices().deletePostModel(postId: postModel.id!);
-                        setState(() {});
-                      },
-                      icon: const Icon(
-                        Icons.delete,
-                        color: Colors.red,
-                      ))
+                    onPressed: () {
+                      FirebaseServices().deletePostModel(postId: postModel.id!);
+                      setState(() {});
+                    },
+                    icon: const Icon(
+                      Icons.delete,
+                      color: Colors.red,
+                    ),
+                  )
                 ],
               ),
             ),
